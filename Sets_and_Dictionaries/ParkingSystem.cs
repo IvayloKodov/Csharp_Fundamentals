@@ -4,15 +4,16 @@ using System.Linq;
 
 public class ParkingSystem
 {
-    static bool[,] parking;
-    static int closestPlace;
+    static Dictionary<int, HashSet<int>> parking;
+    static int rows;
+    static int cols;
 
     public static void Main()
     {
         int[] dimentions = Console.ReadLine().Split().Select(int.Parse).ToArray();
-        int rows = dimentions[0];
-        int cols = dimentions[1];
-        parking = new bool[rows, cols];
+        rows = dimentions[0];
+        cols = dimentions[1];
+        parking = new Dictionary<int, HashSet<int>>();
 
         string input = Console.ReadLine();
         while (input != "stop")
@@ -23,17 +24,18 @@ public class ParkingSystem
             int parkCol = parkingInfo[2];
             int distance = Math.Abs(entry - parkRow) + 1;
 
-            if (!parking[parkRow, parkCol])
+            if (IsPlaceFree(parkRow, parkCol))// if its free
             {
-                parking[parkRow, parkCol] = true;
                 Console.WriteLine(distance + parkCol);
+                OccupyThePlace(parkRow, parkCol);
             }
-            else
+            else// If the place is occupied, start searching the better place
             {
-                if (!isParkingFull(parkRow, parkCol))
+                int newPlace = FindPlace(parkRow, parkCol);
+                if (newPlace != 0)
                 {
-                    parking[parkRow, closestPlace] = true;
-                    Console.WriteLine(distance + closestPlace);
+                    Console.WriteLine(distance + newPlace);
+                    OccupyThePlace(parkRow, newPlace);
                 }
                 else
                 {
@@ -43,30 +45,47 @@ public class ParkingSystem
             input = Console.ReadLine();
         }
     }
-    public static bool isParkingFull(int parkRow, int parkCol)
+
+    private static void OccupyThePlace(int parkRow, int parkCol)
     {
-        SortedDictionary<int, int> finder = new SortedDictionary<int, int>();
-        for (int i = 1; i < parking.GetLength(1); i++)
+        if (!parking.ContainsKey(parkRow))
         {
-            if (!parking[parkRow, i])
+            parking.Add(parkRow, new HashSet<int>());
+        }
+        parking[parkRow].Add(parkCol);
+    }
+
+    private static int FindPlace(int parkRow, int parkCol)
+    {
+        int newPlace = 0;
+        int closerPlace = int.MaxValue;
+        for (int i = 1; i < cols; i++)
+        {
+            if (!parking[parkRow].Contains(i))
             {
-                int distance = Math.Abs(parkCol - i);
-                if (!finder.ContainsKey(distance))
+                int currentDistance = Math.Abs(i - parkCol);
+                if (currentDistance < closerPlace)
                 {
-                    finder.Add(distance, i);
+                    closerPlace = currentDistance;
+                    newPlace = i;
                 }
             }
         }
+        return newPlace;
+    }
 
-        if (finder.Count != 0)
+    private static bool IsPlaceFree(int parkRow, int parkCol)
+    {
+        if (!parking.ContainsKey(parkRow))
         {
-            closestPlace = finder.First().Value;
-            return false;
+            parking.Add(parkRow, new HashSet<int>());
         }
-        else
+
+        if (!parking[parkRow].Contains(parkCol))
         {
             return true;
         }
+        return false;
     }
 }
 
